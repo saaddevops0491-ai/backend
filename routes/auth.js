@@ -6,13 +6,14 @@ const generateToken = require('../utils/generateToken');
 const sendEmail = require('../utils/sendEmail');
 const { getWelcomeEmailTemplate, getPasswordResetEmailTemplate } = require('../utils/emailTemplates');
 const { protect } = require('../middleware/auth');
+const { checkEmailExists } = require('../middleware/emailVerification');
 
 const router = express.Router();
 
 // @desc    Register user
 // @route   POST /api/auth/register
 // @access  Public
-router.post('/register', [
+router.post('/register', checkEmailExists, [
   body('firstName')
     .trim()
     .isLength({ min: 2, max: 50 })

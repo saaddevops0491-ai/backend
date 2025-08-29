@@ -15,7 +15,7 @@ const sendEmail = async (options) => {
 
     // Email options
     const mailOptions = {
-      from: `"Saher Flow Solutions" <${process.env.EMAIL_USER}>`,
+      from: `"Saher Flow Solutions" <saad.mahmood@saherflow.com>`,
       to: options.email,
       subject: options.subject,
       html: options.html
