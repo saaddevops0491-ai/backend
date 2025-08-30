@@ -21,13 +21,19 @@ const getWelcomeEmailTemplate = (firstName, verificationUrl) => {
         <p>To get started, please verify your email address by clicking the button below:</p>
         
         <div style="text-align: center; margin: 30px 0;">
-          <a href="${verificationUrl}" style="background: #ffd500; color: #1a3a5c; padding: 12px 30px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;">Verify Email Address</a>
+          <a href="${verificationUrl}" style="background: #ffd500; color: #1a3a5c; padding: 12px 30px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;" target="_blank">Verify Email Address</a>
         </div>
         
         <p>Or copy and paste this link into your browser:</p>
         <p style="word-break: break-all; color: #666; font-size: 14px;">${verificationUrl}</p>
         
         <p><strong>This verification link will expire in 24 hours.</strong></p>
+        
+        <div style="background: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0;">
+          <p style="margin: 0; color: #666; font-size: 14px;">
+            <strong>Important:</strong> This link will open in your browser and redirect you back to the application after verification.
+          </p>
+        </div>
         
         <hr style="border: none; border-top: 1px solid #e0e0e0; margin: 30px 0;">
         
@@ -68,13 +74,19 @@ const getPasswordResetEmailTemplate = (firstName, resetUrl) => {
         <p>Click the button below to reset your password:</p>
         
         <div style="text-align: center; margin: 30px 0;">
-          <a href="${resetUrl}" style="background: #ffd500; color: #1a3a5c; padding: 12px 30px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;">Reset Password</a>
+          <a href="${resetUrl}" style="background: #ffd500; color: #1a3a5c; padding: 12px 30px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;" target="_blank">Reset Password</a>
         </div>
         
         <p>Or copy and paste this link into your browser:</p>
         <p style="word-break: break-all; color: #666; font-size: 14px;">${resetUrl}</p>
         
         <p><strong>This reset link will expire in 10 minutes for security reasons.</strong></p>
+        
+        <div style="background: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0;">
+          <p style="margin: 0; color: #666; font-size: 14px;">
+            <strong>Important:</strong> This link will open in your browser where you can set your new password.
+          </p>
+        </div>
         
         <hr style="border: none; border-top: 1px solid #e0e0e0; margin: 30px 0;">
         

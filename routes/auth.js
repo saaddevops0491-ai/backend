@@ -74,7 +74,7 @@ router.post('/register', validateCompanyDomain, [
     await user.save({ validateBeforeSave: false });
 
     // Create verification URL
-    const verificationUrl = `${process.env.CLIENT_URL}/verify-email/${verificationToken}`;
+    const verificationUrl = `http://localhost:5000/api/auth/verify-email/${verificationToken}`;
 
     try {
       // Send verification email
@@ -232,10 +232,43 @@ router.get('/verify-email/:token', async (req, res) => {
     user.emailVerificationExpires = undefined;
     await user.save({ validateBeforeSave: false });
 
-    res.json({
-      success: true,
-      message: 'Email verified successfully'
-    });
+    // Send HTML response for better user experience
+    res.send(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Email Verified - Saher Flow Solutions</title>
+        <style>
+          body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; }
+          .container { max-width: 600px; margin: 0 auto; background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+          .header { background: linear-gradient(135deg, #1a3a5c 0%, #153149 100%); padding: 30px; text-align: center; }
+          .header h1 { color: #ffd500; margin: 0; font-size: 28px; }
+          .content { padding: 30px; text-align: center; }
+          .success-icon { font-size: 48px; color: #28a745; margin-bottom: 20px; }
+          .btn { background: #ffd500; color: #1a3a5c; padding: 12px 30px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block; margin-top: 20px; }
+          .btn:hover { background: #e6c200; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>Saher Flow Solutions</h1>
+          </div>
+          <div class="content">
+            <div class="success-icon">✅</div>
+            <h2 style="color: #1a3a5c;">Email Verified Successfully!</h2>
+            <p>Your email address has been verified. You can now access all features of your account.</p>
+            <a href="${process.env.CLIENT_URL || 'http://localhost:5173'}" class="btn">Go to Dashboard</a>
+            <p style="margin-top: 30px; color: #666; font-size: 14px;">
+              You can now close this window and return to the application.
+            </p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `);
   } catch (error) {
     console.error('Email verification error:', error);
     res.status(500).json({
@@ -281,7 +314,7 @@ router.post('/forgot-password', [
     await user.save({ validateBeforeSave: false });
 
     // Create reset URL
-    const resetUrl = `${process.env.CLIENT_URL}/reset-password/${resetToken}`;
+    const resetUrl = `http://localhost:5000/api/auth/reset-password/${resetToken}`;
 
     try {
       // Send password reset email
@@ -318,6 +351,186 @@ router.post('/forgot-password', [
 });
 
 // @desc    Reset password
+// @route   PUT /api/auth/reset-password/:token
+// @access  Public
+router.get('/reset-password/:token', async (req, res) => {
+  try {
+    // Hash the token from URL
+    const hashedToken = crypto
+      .createHash('sha256')
+      .update(req.params.token)
+      .digest('hex');
+
+    // Find user with this token
+    const user = await User.findOne({
+      passwordResetToken: hashedToken,
+      passwordResetExpires: { $gt: Date.now() }
+    });
+
+    if (!user) {
+      return res.send(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Invalid Reset Link - Saher Flow Solutions</title>
+          <style>
+            body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; }
+            .container { max-width: 600px; margin: 0 auto; background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+            .header { background: linear-gradient(135deg, #1a3a5c 0%, #153149 100%); padding: 30px; text-align: center; }
+            .header h1 { color: #ffd500; margin: 0; font-size: 28px; }
+            .content { padding: 30px; text-align: center; }
+            .error-icon { font-size: 48px; color: #dc3545; margin-bottom: 20px; }
+            .btn { background: #ffd500; color: #1a3a5c; padding: 12px 30px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block; margin-top: 20px; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <h1>Saher Flow Solutions</h1>
+            </div>
+            <div class="content">
+              <div class="error-icon">❌</div>
+              <h2 style="color: #dc3545;">Invalid or Expired Reset Link</h2>
+                This window will automatically redirect you to the login page in 5 seconds.
+              <a href="${process.env.CLIENT_URL || 'http://localhost:5173'}/forgot-password" class="btn">Request New Reset</a>
+            </div>
+          </div>
+          <script>
+            setTimeout(() => {
+              window.location.href = '${process.env.CLIENT_URL || 'http://localhost:5173'}/login';
+            }, 5000);
+          </script>
+        </body>
+        </html>
+      `);
+    }
+
+    // Show password reset form
+    res.send(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Reset Password - Saher Flow Solutions</title>
+        <style>
+          body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; }
+          .container { max-width: 600px; margin: 0 auto; background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+          .header { background: linear-gradient(135deg, #1a3a5c 0%, #153149 100%); padding: 30px; text-align: center; }
+          .header h1 { color: #ffd500; margin: 0; font-size: 28px; }
+          .content { padding: 30px; }
+          .form-group { margin-bottom: 20px; }
+          .form-group label { display: block; margin-bottom: 5px; font-weight: bold; color: #1a3a5c; }
+          .form-group input { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 5px; font-size: 16px; box-sizing: border-box; }
+          .btn { background: #ffd500; color: #1a3a5c; padding: 12px 30px; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; width: 100%; font-size: 16px; }
+          .btn:hover { background: #e6c200; }
+          .btn:disabled { background: #ccc; cursor: not-allowed; }
+          .message { padding: 10px; border-radius: 5px; margin-bottom: 20px; }
+          .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+          .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>Reset Your Password</h1>
+          </div>
+          <div class="content">
+            <div id="message"></div>
+            <form id="resetForm">
+              <div class="form-group">
+                <label for="password">New Password:</label>
+                <input type="password" id="password" name="password" required minlength="6">
+                <small style="color: #666;">Must be at least 6 characters with uppercase, lowercase, and number</small>
+              </div>
+              <div class="form-group">
+                <label for="confirmPassword">Confirm Password:</label>
+                <input type="password" id="confirmPassword" name="confirmPassword" required>
+              </div>
+              <button type="submit" class="btn" id="submitBtn">Reset Password</button>
+            </form>
+          </div>
+        </div>
+        
+        <script>
+          document.getElementById('resetForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+            const messageDiv = document.getElementById('message');
+            const submitBtn = document.getElementById('submitBtn');
+            
+            // Clear previous messages
+            messageDiv.innerHTML = '';
+            
+            // Validate passwords match
+            if (password !== confirmPassword) {
+              messageDiv.innerHTML = '<div class="message error">Passwords do not match</div>';
+              return;
+            }
+            
+            // Validate password strength
+            if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)/.test(password)) {
+              messageDiv.innerHTML = '<div class="message error">Password must contain at least one uppercase letter, one lowercase letter, and one number</div>';
+              return;
+            }
+            
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Resetting...';
+            
+            try {
+              const response = await fetch('/api/auth/reset-password/${req.params.token}', {
+                method: 'PUT',
+                headers: {
+                  'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ password })
+              });
+              
+              const data = await response.json();
+              
+              if (data.success) {
+                messageDiv.innerHTML = '<div class="message success">Password reset successful! You can now login with your new password.</div>';
+                document.getElementById('resetForm').style.display = 'none';
+                messageDiv.innerHTML += '<div class="message success">Redirecting to login page...</div>';
+                setTimeout(() => {
+                  window.location.href = '${process.env.CLIENT_URL || 'http://localhost:5173'}/login';
+                }, 3000);
+              } else {
+                messageDiv.innerHTML = '<div class="message error">' + data.message + '</div>';
+              }
+            } catch (error) {
+              messageDiv.innerHTML = '<div class="message error">Network error. Please try again.</div>';
+            }
+            
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Reset Password';
+          });
+        </script>
+      </body>
+      </html>
+    `);
+  } catch (error) {
+    console.error('Password reset page error:', error);
+    res.status(500).send(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Error - Saher Flow Solutions</title>
+      </head>
+      <body style="font-family: Arial, sans-serif; text-align: center; padding: 50px;">
+        <h1>Server Error</h1>
+        <p>Something went wrong. Please try again later.</p>
+      </body>
+      </html>
+    `);
+  }
+});
+
+// @desc    Reset password (API endpoint)
 // @route   PUT /api/auth/reset-password/:token
 // @access  Public
 router.put('/reset-password/:token', [
@@ -387,6 +600,80 @@ router.put('/reset-password/:token', [
     res.status(500).json({
       success: false,
       message: 'Server error during password reset'
+    });
+  }
+});
+
+// @desc    Resend verification email
+// @route   POST /api/auth/resend-verification
+// @access  Public
+router.post('/resend-verification', [
+  body('email')
+    .isEmail()
+    .normalizeEmail()
+    .withMessage('Please enter a valid email')
+], async (req, res) => {
+  try {
+    // Check for validation errors
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        success: false,
+        message: 'Validation failed',
+        errors: errors.array()
+      });
+    }
+
+    const { email } = req.body;
+
+    // Find user
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'No user found with this email address'
+      });
+    }
+
+    // Check if already verified
+    if (user.isEmailVerified) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email is already verified'
+      });
+    }
+
+    // Generate new verification token
+    const verificationToken = user.generateEmailVerificationToken();
+    await user.save({ validateBeforeSave: false });
+
+    // Create verification URL
+    const verificationUrl = `${process.env.API_URL || 'http://localhost:5000'}/api/auth/verify-email/${verificationToken}`;
+
+    try {
+      // Send verification email
+      await sendEmail({
+        email: user.email,
+        subject: 'Email Verification - Saher Flow Solutions',
+        html: getWelcomeEmailTemplate(user.firstName, verificationUrl)
+      });
+
+      res.json({
+        success: true,
+        message: 'Verification email sent successfully'
+      });
+    } catch (emailError) {
+      console.error('Verification email failed:', emailError);
+      res.status(500).json({
+        success: false,
+        message: 'Could not send verification email'
+      });
+    }
+  } catch (error) {
+    console.error('Resend verification error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error during verification email resend'
     });
   }
 });
