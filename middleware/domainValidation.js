@@ -1,9 +1,9 @@
 // Allowed company domains for registration
 const allowedDomains = [
   'aramco.com',
-  'adnoc.com', 
-  'qtm.com',
-  'pdo.com',
+  'adnoc.ae', 
+  'qtm.com.qa',
+  'pdo.co.om',
   'dnv.com',
   'saherflow.com'
 ];

@@ -3,7 +3,7 @@ const nodemailer = require('nodemailer');
 const sendEmail = async (options) => {
   try {
     // Create transporter
-    const transporter = nodemailer.createTransporter({
+    const transporter = nodemailer.createTransport({
       host: process.env.EMAIL_HOST,
       port: process.env.EMAIL_PORT,
       secure: false, // true for 465, false for other ports
@@ -15,7 +15,7 @@ const sendEmail = async (options) => {
 
     // Email options
     const mailOptions = {
-      from: `"Saher Flow Solutions" <saad.mahmood@saherflow.com>`,
+      from: `"Saher Flow Solutions" <${process.env.EMAIL_USER}>`,
       to: options.email,
       subject: options.subject,
       html: options.html

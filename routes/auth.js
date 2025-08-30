@@ -65,49 +65,25 @@ router.post('/register', validateCompanyDomain, [
       lastName,
       email,
       company,
-      password
+      password,
+      isEmailVerified: true // Temporarily auto-verify for testing
     });
 
-    // Generate email verification token
-    const verificationToken = user.generateEmailVerificationToken();
-    await user.save({ validateBeforeSave: false });
-
-    // Create verification URL
-    const verificationUrl = `${process.env.CLIENT_URL}/verify-email/${verificationToken}`;
-
-    try {
-      // Send welcome email with verification
-      await sendEmail({
-        email: user.email,
-        subject: 'Welcome to Saher Flow Solutions - Verify Your Email',
-        html: getWelcomeEmailTemplate(user.firstName, verificationUrl)
-      });
-
-      res.status(201).json({
-        success: true,
-        message: 'User registered successfully. Please check your email to verify your account.',
-        data: {
-          user: {
-            id: user._id,
-            firstName: user.firstName,
-            lastName: user.lastName,
-            email: user.email,
-            company: user.company,
-            isEmailVerified: user.isEmailVerified
-          }
+    // Temporarily skip email verification for testing
+    res.status(201).json({
+      success: true,
+      message: 'User registered successfully. Email verification temporarily disabled for testing.',
+      data: {
+        user: {
+          id: user._id,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          email: user.email,
+          company: user.company,
+          isEmailVerified: user.isEmailVerified
         }
-      });
-    } catch (emailError) {
-      console.error('Email sending failed:', emailError);
-      
-      // Delete user if email fails
-      await User.findByIdAndDelete(user._id);
-      
-      res.status(500).json({
-        success: false,
-        message: 'User registration failed. Could not send verification email.'
-      });
-    }
+      }
+    });
   } catch (error) {
     console.error('Registration error:', error);
     res.status(500).json({
