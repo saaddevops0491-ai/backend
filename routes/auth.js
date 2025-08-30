@@ -1,19 +1,20 @@
 const express = require('express');
 const { body, validationResult } = require('express-validator');
 const crypto = require('crypto');
-const User = require('../models/User');
 const generateToken = require('../utils/generateToken');
 const sendEmail = require('../utils/sendEmail');
 const { getWelcomeEmailTemplate, getPasswordResetEmailTemplate } = require('../utils/emailTemplates');
 const { protect } = require('../middleware/auth');
-const { checkEmailExists } = require('../middleware/emailVerification');
+const { requireEmailVerification } = require('../middleware/emailVerification');
+const { validateCompanyDomain } = require('../middleware/domainValidation');
+const User = require('../models/User');
 
 const router = express.Router();
 
 // @desc    Register user
 // @route   POST /api/auth/register
 // @access  Public
-router.post('/register', checkEmailExists, [
+router.post('/register', validateCompanyDomain, [
   body('firstName')
     .trim()
     .isLength({ min: 2, max: 50 })

@@ -19,25 +19,4 @@ const requireEmailVerification = async (req, res, next) => {
   }
 };
 
-// Check if email exists in our system before allowing registration
-const checkEmailExists = async (req, res, next) => {
-  try {
-    const { email } = req.body;
-    
-    // For this implementation, we'll allow any valid email format
-    // In production, you might want to verify against a whitelist or use an email verification service
-    
-    // Basic email format validation is already handled by express-validator
-    // You can add additional checks here if needed
-    
-    next();
-  } catch (error) {
-    console.error('Email existence check error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Server error checking email'
-    });
-  }
-};
-
-module.exports = { requireEmailVerification, checkEmailExists };
+module.exports = { requireEmailVerification };
