@@ -1,5 +1,12 @@
-const Company = require('../models/Company');
-
+// Allowed company domains for registration
+const allowedDomains = [
+  'aramco.com',
+  'adnoc.ae', 
+  'qtm.com.qa',
+  'pdo.co.om',
+  'dnv.com',
+  'saherflow.com'
+];  
 // Check if email domain is allowed
 const validateCompanyDomain = (req, res, next) => {
   try {
@@ -21,22 +28,19 @@ const validateCompanyDomain = (req, res, next) => {
       });
     }
 
-    // Check if domain exists in database
-    const company = await Company.findOne({ 
-      domain: emailDomain,
-      isActive: true 
-    });
+    // Check if domain is in allowed list
+    const isAllowedDomain = allowedDomains.some(domain => 
+      emailDomain === domain || emailDomain.endsWith('.' + domain)
+    );
 
-    if (!company) {
+    if (!isAllowedDomain) {
       return res.status(403).json({
         success: false,
-        message: 'Registration is restricted to employees of approved companies only. Please contact support if your company should be added.',
-        contactSupport: 'support@saherflow.com'
+        message: `Registration is restricted to employees of approved companies only. Allowed domains: ${allowedDomains.join(', ')}`,
+        allowedDomains: allowedDomains
       });
     }
 
-    // Add company info to request for later use
-    req.companyInfo = company;
     next();
   } catch (error) {
     console.error('Domain validation error:', error);
@@ -47,4 +51,4 @@ const validateCompanyDomain = (req, res, next) => {
   }
 };
 
-module.exports = { validateCompanyDomain };
+module.exports = { validateCompanyDomain, allowedDomains };

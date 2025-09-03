@@ -1,7 +1,7 @@
 const express = require('express');
 const { body, validationResult } = require('express-validator');
 const User = require('../models/User');
-const { protect, admin, generateTokenWithVersion } = require('../middleware/auth');
+const { protect, admin } = require('../middleware/auth');
 const { requireEmailVerification } = require('../middleware/emailVerification');
 
 const router = express.Router();
@@ -53,14 +53,11 @@ router.put('/profile', protect, requireEmailVerification, [
       }
     );
 
-    // Generate renewed token
-    const newToken = generateTokenWithVersion(user._id, user.tokenVersion);
     res.json({
       success: true,
       message: 'Profile updated successfully',
       data: {
-        user,
-        token: newToken
+        user
       }
     });
   } catch (error) {
@@ -114,14 +111,9 @@ router.put('/change-password', protect, requireEmailVerification, [
     user.password = newPassword;
     await user.save();
 
-    // Generate renewed token
-    const newToken = generateTokenWithVersion(user._id, user.tokenVersion);
     res.json({
       success: true,
-      message: 'Password changed successfully',
-      data: {
-        token: newToken
-      }
+      message: 'Password changed successfully'
     });
   } catch (error) {
     console.error('Change password error:', error);

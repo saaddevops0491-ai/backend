@@ -1,16 +1,6 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 
-// Get client IP address
-const getClientIP = (req) => {
-  return req.headers['x-forwarded-for'] || 
-         req.headers['x-real-ip'] || 
-         req.connection.remoteAddress || 
-         req.socket.remoteAddress ||
-         (req.connection.socket ? req.connection.socket.remoteAddress : null) ||
-         req.ip;
-};
-
 // Protect routes - require authentication
 const protect = async (req, res, next) => {
   try {
@@ -42,14 +32,6 @@ const protect = async (req, res, next) => {
         });
       }
 
-      // Check token version (for token invalidation)
-      if (decoded.tokenVersion !== user.tokenVersion) {
-        return res.status(401).json({
-          success: false,
-          message: 'Token has been invalidated. Please login again.'
-        });
-      }
-
       if (!user.isActive) {
         return res.status(401).json({
           success: false,
@@ -58,7 +40,6 @@ const protect = async (req, res, next) => {
       }
 
       req.user = user;
-      req.clientIP = getClientIP(req);
       next();
     } catch (error) {
       return res.status(401).json({
@@ -75,20 +56,6 @@ const protect = async (req, res, next) => {
   }
 };
 
-// Generate token with version
-const generateTokenWithVersion = (userId, tokenVersion) => {
-  return jwt.sign(
-    { 
-      id: userId,
-      tokenVersion: tokenVersion 
-    }, 
-    process.env.JWT_SECRET, 
-    {
-      expiresIn: process.env.JWT_EXPIRE || '7d'
-    }
-  );
-};
-
 // Admin only access
 const admin = (req, res, next) => {
   if (req.user && req.user.role === 'admin') {
@@ -101,4 +68,4 @@ const admin = (req, res, next) => {
   }
 };
 
-module.exports = { protect, admin, generateTokenWithVersion, getClientIP };
+module.exports = { protect, admin };
