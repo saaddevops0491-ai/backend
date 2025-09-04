@@ -7,6 +7,7 @@ const { getWelcomeEmailTemplate, getPasswordResetEmailTemplate } = require('../u
 const { protect } = require('../middleware/auth');
 const { requireEmailVerification } = require('../middleware/emailVerification');
 const { validateCompanyDomain } = require('../middleware/domainValidation');
+const seedAdmin = require('../utils/seedAdmin');
 const Company = require('../models/Company');
 const User = require('../models/User');
 

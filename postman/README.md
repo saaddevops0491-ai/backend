@@ -1,88 +1,148 @@
-# Postman Collection Setup
+# Postman Collections for Saher Flow Solutions API
 
-## Quick Start
+Complete API testing collections organized by functionality for easy testing and development.
 
-1. **Import Collection**
-   - Open Postman
-   - Click "Import" 
-   - Select `Company_Management_API.postman_collection.json`
+## Collections Overview
 
-2. **Set Environment Variables**
-   - Create new environment in Postman
-   - Add variables:
-     - `base_url`: `http://localhost:5000`
-     - `admin_token`: (will be auto-populated after login)
-     - `company_id`: (will be auto-populated after creating company)
+### 01 - Authentication API
+Complete authentication flow testing including:
+- User registration with domain validation
+- Login/logout functionality
+- Password reset and change
+- Email verification
+- Input validation tests
 
-3. **Get Admin Access**
-   - First create an admin user (see Company Management Guide)
-   - Run "Admin Login" request
-   - Token will be automatically saved
+### 02 - Company Management API
+Company CRUD operations for admin users:
+- Create, read, update, delete companies
+- Domain management and validation
+- Access control testing
+- Bulk operations
 
-4. **Test Company Operations**
-   - Run requests in order:
-     1. Get All Companies
-     2. Create New Company
-     3. Update Company
-     4. Test Registration
-     5. Deactivate Company
+### 03 - User Management API
+User management and profile operations:
+- Admin user management endpoints
+- User profile updates
+- Role-based access control
+- Account management
 
-## Collection Structure
+### 04 - Integration Tests
+End-to-end workflow testing:
+- Complete company registration flow
+- User registration and login flow
+- Password reset workflow
+- Cross-feature integration
 
-### Authentication
-- **Admin Login**: Get admin token for protected endpoints
+### 05 - Health Check & Utilities
+System health and utility endpoints:
+- API health monitoring
+- Domain validation utilities
+- Error handling tests
+- Data validation
 
-### Company Management
-- **Get All Companies**: View all active companies (public)
-- **Get Company by ID**: Get specific company details (admin)
-- **Create New Company**: Add new approved company (admin)
-- **Update Company**: Modify company details (admin)
-- **Deactivate Company**: Soft delete company (admin)
-- **Check Domain Availability**: Verify if domain is approved (public)
+## Quick Setup
 
-### Test Registration
-- **Register User with Approved Domain**: Test successful registration
-- **Register User with Unapproved Domain**: Test domain restriction
+1. **Import All Collections**
+   ```bash
+   # Import all JSON files in Postman:
+   - 01_Authentication.postman_collection.json
+   - 02_Company_Management.postman_collection.json
+   - 03_User_Management.postman_collection.json
+   - 04_Integration_Tests.postman_collection.json
+   - 05_Health_and_Utilities.postman_collection.json
+   ```
 
-### Validation Tests
-- **Missing Required Fields**: Test validation errors
-- **Invalid Domain Format**: Test domain format validation
-- **Duplicate Name**: Test unique name constraint
+2. **Create Environment**
+   Create a new environment in Postman with these variables:
+   ```
+   base_url: http://localhost:5000
+   admin_token: (auto-populated)
+   user_token: (auto-populated)
+   company_id: (auto-populated)
+   test_email: testuser@newcompany.com
+   ```
 
-## Expected Responses
+3. **Start Testing**
+   - Begin with "05 - Health Check" to verify API is running
+   - Run "01 - Authentication" to test login and get tokens
+   - Proceed with other collections as needed
 
-### Success Response Format
+## Testing Workflows
+
+### Basic API Testing
+1. Health Check → Authentication → Company Management
+2. Test all CRUD operations
+3. Verify access controls
+
+### Complete Integration Testing
+1. Run "04 - Integration Tests" collection
+2. Tests complete user journey from company creation to user registration
+3. Includes cleanup and validation
+
+### Security Testing
+1. Test unauthorized access attempts
+2. Verify role-based permissions
+3. Test token validation
+4. Check input sanitization
+
+## Auto-Generated Variables
+
+The collections automatically save important values:
+- **admin_token**: Saved after admin login
+- **user_token**: Saved after user login  
+- **company_id**: Saved after creating a company
+- **test_email**: Used for integration testing
+
+## Default Credentials
+
+### Admin Account
+- **Email**: admin@saherflow.com
+- **Password**: Admin123
+
+### Test User (after registration)
+- **Email**: john@aramco.com
+- **Password**: Password123
+
+## Response Formats
+
+All API responses follow consistent formats:
+
+**Success Response:**
 ```json
 {
   "success": true,
   "message": "Operation successful",
-  "data": {
-    // Response data
-  }
+  "data": { /* response data */ }
 }
 ```
 
-### Error Response Format
+**Error Response:**
 ```json
 {
   "success": false,
   "message": "Error description",
-  "errors": [] // Validation errors if any
+  "errors": [ /* validation errors */ ]
 }
 ```
 
-## Testing Tips
+## Testing Best Practices
 
-1. **Run in Order**: Some requests depend on previous ones
-2. **Check Auto-Variables**: Token and IDs are saved automatically
-3. **Verify Responses**: Check success/error status in each response
-4. **Test Edge Cases**: Try invalid data to test validation
-5. **Clean Up**: Remove test companies after testing
+1. **Sequential Testing**: Run collections in numerical order (01 → 05)
+2. **Environment Setup**: Always set up environment variables first
+3. **Token Management**: Tokens are auto-saved, but verify they're set
+4. **Data Cleanup**: Use integration tests for proper cleanup
+5. **Error Validation**: Test both success and failure scenarios
 
-## Common Test Scenarios
+## Troubleshooting
 
-1. **Happy Path**: Create → Update → Test Registration → Deactivate
-2. **Validation**: Test all validation rules with invalid data
-3. **Security**: Test endpoints without admin token
-4. **Domain Conflicts**: Try creating companies with duplicate domains
-5. **Registration Flow**: Test user registration with various domains
+### Common Issues
+- **401 Unauthorized**: Check if token is set in environment
+- **403 Forbidden**: Verify user has admin role for admin endpoints
+- **500 Server Error**: Check if backend server is running
+- **Domain Validation Fails**: Ensure company exists with that domain
+
+### Debug Tips
+- Check Postman console for auto-saved variables
+- Verify environment is selected
+- Ensure backend server is running on port 5000
+- Check MongoDB connection in backend logs

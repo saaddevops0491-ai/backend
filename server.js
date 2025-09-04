@@ -1,51 +1,88 @@
+// server.js
+'use strict';
+
 const express = require('express');
 const mongoose = require('mongoose');
-const cors = require('cors');
 const dotenv = require('dotenv');
 const seedCompanies = require('./utils/seedCompanies');
+const seedAdmin = require('./utils/seedAdmin');
 
 // Load environment variables
 dotenv.config();
 
-// Import routes
+const app = express();
+
+// --- CONFIG ---
+const PORT = parseInt(process.env.PORT, 10) || 5000;
+const rawClientUrls = process.env.CLIENT_URL || '';
+const allowedOrigins = rawClientUrls
+  .split(',')
+  .map((s) => s.trim())
+  .filter(Boolean);
+
+// include common dev origins as fallback if none provided
+if (allowedOrigins.length === 0) {
+  allowedOrigins.push('http://localhost:5173', 'http://localhost:3001', 'http://localhost:3000');
+}
+
+// --- CORS - manual middleware that reliably sets headers for allowed origins ---
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+
+  // If no origin (server-to-server or curl) allow it by default
+  if (!origin) {
+    if (req.method === 'OPTIONS') {
+      res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,DELETE,OPTIONS');
+      res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+      return res.sendStatus(200);
+    }
+    return next();
+  }
+
+  // If origin is in allowed list, reflect it and set other CORS headers
+  if (allowedOrigins.includes(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,DELETE,OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+
+    // Preflight short-circuit
+    if (req.method === 'OPTIONS') {
+      return res.sendStatus(200);
+    }
+
+    return next();
+  }
+
+  // Origin not allowed — respond with 403 JSON (helps debugging in dev)
+  return res.status(403).json({
+    success: false,
+    message: `CORS policy: Origin ${origin} is not allowed. Add it to CLIENT_URL in your .env.`
+  });
+});
+
+// --- Body parsers ---
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// --- Routes ---
 const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/user');
 const companyRoutes = require('./routes/company');
 
-const app = express();
-
-// Middleware
-app.use(cors({
-  origin: process.env.CLIENT_URL || 'http://localhost:5173',
-  credentials: true
-}));
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-
-// Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/user', userRoutes);
 app.use('/api/company', companyRoutes);
 
-// Health check route
+// Health check
 app.get('/api/health', (req, res) => {
-  res.json({ 
+  res.json({
     message: 'Saher Flow Solutions API is running!',
     timestamp: new Date().toISOString()
   });
 });
 
-// Error handling middleware
-app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).json({
-    success: false,
-    message: 'Something went wrong!',
-    error: process.env.NODE_ENV === 'development' ? err.message : 'Internal server error'
-  });
-});
-
-// 404 handler
+// 404 handler (after routes)
 app.use('*', (req, res) => {
   res.status(404).json({
     success: false,
@@ -53,38 +90,91 @@ app.use('*', (req, res) => {
   });
 });
 
-// Connect to MongoDB
+// Error handler (last middleware)
+app.use((err, req, res, next) => {
+  console.error('Unhandled error:', err && err.stack ? err.stack : err);
+  res.status(500).json({
+    success: false,
+    message: 'Something went wrong!',
+    error: process.env.NODE_ENV === 'development' ? (err && err.message) : 'Internal server error'
+  });
+});
+
+// --- MongoDB connection & server start ---
 const connectDB = async () => {
   try {
     if (!process.env.MONGODB_URI) {
       throw new Error('MONGODB_URI environment variable is not defined');
     }
-    
     await mongoose.connect(process.env.MONGODB_URI);
     console.log('Connected to MongoDB');
   } catch (error) {
-    console.error('MongoDB connection error:', error.message);
+    console.error('MongoDB connection error:', error.message || error);
     console.log('\n📋 To fix this error:');
-    console.log('1. Create a MongoDB Atlas account at https://www.mongodb.com/atlas');
-    console.log('2. Create a new cluster');
-    console.log('3. Get your connection string');
-    console.log('4. Update MONGODB_URI in your .env file');
-    console.log('5. Or install MongoDB locally and start the service\n');
+    console.log('1. Create a MongoDB Atlas cluster or start a local MongoDB.');
+    console.log('2. Get a connection string and set MONGODB_URI in your .env file.');
+    console.log('3. Restart the server.');
     process.exit(1);
   }
 };
 
-connectDB()
-  .then(() => {
-    // Seed initial companies if database is empty
-    seedCompanies().catch(console.error);
-    
-    // Start server
-    const PORT = process.env.PORT || 5000;
-    app.listen(PORT, () => {
-      console.log(`Server is running on port ${PORT}`);
-      console.log(`Health check: http://localhost:${PORT}/api/health`);
-    });
+let server;
+
+const startServer = async () => {
+  await connectDB();
+
+  // Run seeders (do not block start if they fail)
+  seedCompanies().catch((err) => console.error('seedCompanies error:', err));
+  seedAdmin().catch((err) => console.error('seedAdmin error:', err));
+
+  server = app.listen(PORT, () => {
+    console.log(`Server is running on port ${PORT}`);
+    console.log(`Health check: http://localhost:${PORT}/api/health`);
+    console.log('Allowed CORS origins:', allowedOrigins);
   });
 
+  // Graceful handling of listen errors (e.g. EADDRINUSE)
+  server.on('error', (err) => {
+    if (err && err.code === 'EADDRINUSE') {
+      console.error(`Port ${PORT} is already in use (EADDRINUSE).`);
+      console.error('Options:');
+      console.error(`  - Kill the process using the port (Windows: netstat -ano | findstr :${PORT} -> taskkill /PID <pid> /F)`);
+      console.error(`  - Use a different PORT by setting PORT env variable (e.g. PORT=${PORT + 1} npm run dev)`);
+      console.error(`  - Use npx kill-port ${PORT}`);
+      process.exit(1);
+    } else {
+      console.error('Server error:', err);
+      process.exit(1);
+    }
+  });
+};
+
+// Graceful shutdown
+const gracefulShutdown = async (signal) => {
+  console.log(`\nReceived ${signal}. Shutting down gracefully...`);
+  try {
+    if (server) {
+      server.close(() => {
+        console.log('HTTP server closed.');
+      });
+    }
+    await mongoose.disconnect();
+    console.log('MongoDB disconnected.');
+    process.exit(0);
+  } catch (err) {
+    console.error('Error during shutdown:', err);
+    process.exit(1);
+  }
+};
+
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+
+// Start
+startServer().catch((err) => {
+  console.error('Failed to start server:', err);
+  process.exit(1);
+});
+
+// Export app for tests
 module.exports = app;

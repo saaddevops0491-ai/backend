@@ -10,8 +10,22 @@ const router = express.Router();
 // @access  Public (for registration domain checking)
 router.get('/', async (req, res) => {
   try {
-    const companies = await Company.find({ isActive: true })
-      .select('name domains description')
+    // Check if request is from admin (has authorization header)
+    const isAdminRequest = req.headers.authorization;
+    
+    let query = {};
+    let select = 'name domains description';
+    
+    if (isAdminRequest) {
+      // Admin can see all companies including inactive ones
+      select = 'name domains description contactEmail isActive createdAt updatedAt';
+    } else {
+      // Public can only see active companies
+      query = { isActive: true };
+    }
+    
+    const companies = await Company.find(query)
+      .select(select)
       .sort({ name: 1 });
 
     res.json({

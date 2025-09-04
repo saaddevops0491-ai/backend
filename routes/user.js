@@ -152,7 +152,7 @@ router.delete('/account', protect, requireEmailVerification, async (req, res) =>
 router.get('/all', protect, admin, async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 10;
+    const limit = parseInt(req.query.limit) || 20;
     const skip = (page - 1) * limit;
 
     const users = await User.find({ isActive: true })
