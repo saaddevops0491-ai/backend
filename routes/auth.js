@@ -175,6 +175,15 @@ router.post('/login', [
     user.lastLogin = new Date();
     await user.save({ validateBeforeSave: false });
 
+    // Get user IP address
+    const userIP = req.headers['x-forwarded-for'] || 
+                   req.headers['x-real-ip'] || 
+                   req.connection.remoteAddress || 
+                   req.socket.remoteAddress ||
+                   (req.connection.socket ? req.connection.socket.remoteAddress : null) ||
+                   req.ip ||
+                   '127.0.0.1';
+
     // Generate token
     const token = generateToken(user._id);
 
@@ -191,7 +200,8 @@ router.post('/login', [
           company: user.company,
           role: user.role,
           isEmailVerified: user.isEmailVerified,
-          lastLogin: user.lastLogin
+          lastLogin: user.lastLogin,
+          ipAddress: userIP
         }
       }
     });
